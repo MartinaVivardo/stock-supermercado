@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sistema de Stock – Supermercado</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>🛒 Control de Stock – Supermercado</h1>
+    <div class="top-actions">
+      <button id="btnAdd" class="btn primary">+ Nuevo producto</button>
+      <button id="btnExport" class="btn">Exportar CSV</button>
+      <label for="csvImport" class="btn">Importar CSV</label>
+      <input type="file" id="csvImport" accept=".csv" hidden>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Filtros -->
+    <section class="filters card">
+      <div class="filter-row">
+        <input id="search" type="search" placeholder="Buscar por nombre, código de barras o proveedor…" />
+        <select id="filterCategory">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select id="filterSupplier">
+          <option value="">Todos los proveedores</option>
+        </select>
+        <select id="filterStatus">
+          <option value="">Todos los estados</option>
+          <option value="low">Stock bajo</option>
+          <option value="ok">Stock OK</option>
+          <option value="zero">Sin stock</option>
+        </select>
+        <button id="btnClearFilters" class="btn ghost">Limpiar</button>
+      </div>
+    </section>
+
+    <!-- Métricas -->
+    <section class="cards-grid">
+      <div class="stat card">
+        <div class="stat-label">Productos</div>
+        <div class="stat-value" id="statProducts">0</div>
+      </div>
+      <div class="stat card">
+        <div class="stat-label">Valorización (costo)</div>
+        <div class="stat-value" id="statCost">$0</div>
+      </div>
+      <div class="stat card">
+        <div class="stat-label">Valorización (venta)</div>
+        <div class="stat-value" id="statPrice">$0</div>
+      </div>
+      <div class="stat card">
+        <div class="stat-label">En stock bajo</div>
+        <div class="stat-value warn" id="statLow">0</div>
+      </div>
+    </section>
+
+    <!-- Tabla -->
+    <section class="card">
+      <div class="table-actions">
+        <div class="left">
+          <button id="btnBulkIn" class="btn">+ Entrada</button>
+          <button id="btnBulkOut" class="btn">− Salida</button>
+          <button id="btnBulkDelete" class="btn danger">Eliminar</button>
+        </div>
+        <div class="right">
+          <span class="muted" id="rowCount">0 resultados</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="productTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="checkAll"></th>
+              <th data-sort="barcode">Código</th>
+              <th data-sort="name">Nombre</th>
+              <th data-sort="category">Categoría</th>
+              <th data-sort="supplier">Proveedor</th>
+              <th class="num" data-sort="cost">Costo</th>
+              <th class="num" data-sort="price">Precio</th>
+              <th class="num" data-sort="stock">Stock</th>
+              <th class="num" data-sort="minStock">Stock mín.</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Render dinámico -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Crear/Editar -->
+  <dialog id="productModal">
+    <form id="productForm" method="dialog" class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nuevo producto</h2>
+        <button type="button" class="icon-btn" id="closeModal" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="barcode">Código de barras</label>
+          <input id="barcode" name="barcode" required placeholder="EAN/UPC o interno" />
+        </div>
+        <div class="field">
+          <label for="name">Nombre</label>
+          <input id="name" name="name" required placeholder="Ej: Leche descremada 1L" />
+        </div>
+
+        <div class="field">
+          <label for="category">Categoría</label>
+          <input id="category" name="category" list="catList" placeholder="Ej: Lácteos" />
+          <datalist id="catList"></datalist>
+        </div>
+        <div class="field">
+          <label for="supplier">Proveedor</label>
+          <input id="supplier" name="supplier" list="supList" placeholder="Ej: La Serenísima" />
+          <datalist id="supList"></datalist>
+        </div>
+
+        <div class="field">
+          <label for="cost">Costo (unidad)</label>
+          <input id="cost" name="cost" type="number" step="0.01" min="0" required />
+        </div>
+        <div class="field">
+          <label for="price">Precio (unidad)</label>
+          <input id="price" name="price" type="number" step="0.01" min="0" required />
+        </div>
+
+        <div class="field">
+          <label for="stock">Stock</label>
+          <input id="stock" name="stock" type="number" step="1" min="0" required />
+        </div>
+        <div class="field">
+          <label for="minStock">Stock mínimo</label>
+          <input id="minStock" name="minStock" type="number" step="1" min="0" value="0" />
+        </div>
+
+        <div class="field">
+          <label for="location">Ubicación (góndola/depósito)</label>
+          <input id="location" name="location" placeholder="Ej: Góndola A3" />
+        </div>
+        <div class="field">
+          <label for="notes">Notas</label>
+          <input id="notes" name="notes" placeholder="Presentación, lote, vencimiento, etc." />
+        </div>
+      </div>
+
+      <menu class="modal-actions">
+        <button type="reset" class="btn ghost">Limpiar</button>
+        <button type="submit" class="btn primary" id="saveBtn">Guardar</button>
+      </menu>
+
+      <input type="hidden" id="productId" />
+    </form>
+  </dialog>
+
+  <!-- Modal: Ajuste de stock -->
+  <dialog id="adjustModal">
+    <form id="adjustForm" method="dialog" class="modal">
+      <div class="modal-header">
+        <h2>Ajustar stock</h2>
+        <button type="button" class="icon-btn" id="closeAdjust" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="adjustQty">Cantidad</label>
+          <input id="adjustQty" type="number" step="1" />
+        </div>
+        <div class="field">
+          <label for="adjustType">Tipo</label>
+          <select id="adjustType">
+            <option value="in">Entrada (+)</option>
+            <option value="out">Salida (−)</option>
+          </select>
+        </div>
+      </div>
+
+      <menu class="modal-actions">
+        <button class="btn ghost" value="cancel">Cancelar</button>
+        <button class="btn primary" id="confirmAdjust">Aplicar</button>
+      </menu>
+
+      <input type="hidden" id="adjustProductId" />
+    </form>
+  </dialog>
+
+  <footer class="footer muted">
+    Hecho para VS Code · Datos locales (LocalStorage) · Consejos: escaneá el código de barras con un lector en el campo “Código”
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
